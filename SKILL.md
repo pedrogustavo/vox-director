@@ -326,6 +326,11 @@ frame reconstructs the original poster.
 ## Editions
 
 - **Auto edition** (this skill): topic in, film out, all on Atlas.
-- **Manual prompt-pack**: if the user isn't on Atlas, just produce the beat map + the per-beat
-  image prompts + the per-clip motion prompts + the narration script for them to paste into
-  any generator. The creative engine (the prompts) is identical.
+- **Manual prompt-pack / Google Flow edition** (no `ATLASCLOUD_API_KEY` needed):
+  1. Write `out/<project>/beats.json` as usual (same beat map + theme approval gate).
+  2. Export all image, video, narration, and music prompts with exact expected filenames:
+     `python3 scripts/manual_pack.py out/<project>`
+     This writes `prompts_flow.md` and `prompts_flow.json` (and creates `keyframes/`, `clips/`, `audio/`).
+     Present the prompts, recommended models, and target filenames to the user for batch generation in Google Flow / Flow Music.
+  3. Once the user drops the generated files into `keyframes/`, `clips/`, and `audio/`, sync them into `beats.json` and assemble:
+     `python3 scripts/manual_pack.py out/<project> --sync && python3 scripts/assemble.py out/<project>`
