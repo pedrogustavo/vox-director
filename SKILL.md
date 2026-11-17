@@ -42,12 +42,25 @@ Everything hinges on the prompts. **Before writing any image or video prompt, re
 `references/prompt-guide.md`** — it has the exact prompt structures that make the difference
 between "a real Vox collage" and "a moving PowerPoint".
 
+## Step 0 — Ask mode & preferred models (do this first)
+
+Before checking API keys or generating anything, **ask the user**:
+1. **Execution mode:**
+   - **Auto (Atlas Cloud API)** — fully automated end-to-end (`"provider": "atlas_cloud"`, requires `ATLASCLOUD_API_KEY`).
+   - **Auto (OpenRouter API)** — unified OpenAI-compatible API via `https://openrouter.ai/api/v1` (`"provider": "openrouter"`, requires `OPENROUTER_API_KEY`; note: OpenRouter handles images, videos, and TTS, while BGM `audio/bgm.mp3` must be supplied locally e.g. from Flow Music).
+   - **Manual / Google Flow** — exports batch prompts + exact target filenames (`scripts/manual_pack.py`) for Google Flow / Flow Music, then syncs local files and assembles with `ffmpeg` (no API key needed).
+2. **Preferred models** (record the choices in `beats.json` as `image_model` and `video_model`):
+   - **Image model:** e.g. `google/nano-banana-2/text-to-image` (Atlas default) / `google/gemini-2.5-flash-image` (OpenRouter) / `openai/gpt-image-2/text-to-image`, or another model of the user's choice.
+   - **Video model:** e.g. `google/gemini-omni-flash/image-to-video` (Atlas default) / `google/veo-3.1` (OpenRouter) / `kwaivgi/kling-video-o3-pro/image-to-video` (Kling O3 Pro — required for real people/brands), or another model of the user's choice.
+
 ## Prerequisites (check, don't skip)
 
-- `echo "${ATLASCLOUD_API_KEY:+set}"` — if empty, tell the user to set it (get one at
-  https://www.atlascloud.ai/console/api-keys) and stop.
 - `command -v ffmpeg ffprobe` — required for assembly (`brew install ffmpeg` on macOS).
 - `python3 -c "import PIL"` — Pillow, for captions/watermark overlays.
+- **Auto (Atlas Cloud) mode:** `echo "${ATLASCLOUD_API_KEY:+set}"` — if empty, tell the
+  user to set it (https://www.atlascloud.ai/console/api-keys) or switch to **OpenRouter** / **Manual / Google Flow**.
+- **Auto (OpenRouter) mode:** `echo "${OPENROUTER_API_KEY:+set}"` — if empty, tell the
+  user to set it (https://openrouter.ai/settings/keys) or switch to **Atlas Cloud** / **Manual / Google Flow**.
 
 ## Standard workflow (topic → film)
 

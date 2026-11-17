@@ -63,7 +63,9 @@ def run(project_dir: str):
 
     prov = get_provider(doc.get("provider"))
     voice = doc.get("voice", {})
-    voice_id = voice.get("voice_id", "leo")     # named male documentary-ish voice
+    default_voice_id = "alloy" if prov.name == "openrouter" else "leo"
+    voice_model = voice.get("model") or ("openai/gpt-4o-mini-tts" if prov.name == "openrouter" else VOICE_MODEL)
+    voice_id = voice.get("voice_id", default_voice_id)     # named documentary-ish voice
     language = voice.get("language", doc.get("language", "en"))
     speed = float(voice.get("speed", 1.0))
 
@@ -84,15 +86,18 @@ def run(project_dir: str):
                 references=[{"audio_data": ref_b64}]))
         else:
             specs[f"narr_{beat['id']}"] = (lambda t=beat["narration"]: prov.submit_audio(
-                VOICE_MODEL, text=t, language=language, voice_id=voice_id,
+                voice_model, text=t, language=language, voice_id=voice_id,
                 codec="mp3", sample_rate=44100, speed=speed))
 
     # BGM: only generate if we don't already have one (it's slow + costs more).
     bgm_path = os.path.join(adir, "bgm.mp3")
     if not os.path.exists(bgm_path):
-        music_prompt = doc.get("music", "cinematic majestic traditional Chinese guzheng erhu, warm")
-        specs["bgm"] = (lambda mp=music_prompt: prov.submit_audio(
-            MUSIC_MODEL, prompt=mp, is_instrumental=True, format="mp3"))
+        if prov.name == "openrouter":
+            print(f"[bgm] OpenRouter does not generate music — place your BGM at {bgm_path} (e.g. from Flow Music)")
+        else:
+            music_prompt = doc.get("music", "cinematic majestic traditional Chinese guzheng erhu, warm")
+            specs["bgm"] = (lambda mp=music_prompt: prov.submit_audio(
+                MUSIC_MODEL, prompt=mp, is_instrumental=True, format="mp3"))
     else:
         print(f"[bgm] reuse existing {bgm_path}")
 

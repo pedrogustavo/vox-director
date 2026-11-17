@@ -11,9 +11,11 @@ The layer is a thin in-process wrapper — zero extra network hops, so it does N
 slow the pipeline; the only cost is the API latency, which is unchanged.
 """
 import time
+import uuid
 from abc import ABC, abstractmethod
 
 import atlas_cloud
+import openrouter_client
 
 
 class ProviderError(RuntimeError):
@@ -79,7 +81,58 @@ class AtlasCloudProvider(Provider):
         return atlas_cloud.download(url, dest)
 
 
-_REGISTRY = {"atlas_cloud": AtlasCloudProvider}
+class OpenRouterProvider(Provider):
+    """Provider for https://openrouter.ai/api/v1 (images, videos, TTS)."""
+    name = "openrouter"
+
+    def __init__(self):
+        self._sync_results = {}
+
+    def submit_image(self, model, prompt, **params):
+        jid = f"or_sync_{uuid.uuid4().hex[:12]}"
+        try:
+            out_path = openrouter_client.generate_image(model, prompt, **params)
+            self._sync_results[jid] = {"status": "completed", "output": out_path, "error": None}
+        except Exception as e:
+            self._sync_results[jid] = {"status": "failed", "output": None, "error": str(e)}
+        return jid
+
+    def submit_video(self, model, prompt, **params):
+        return openrouter_client.submit_video(model, prompt, **params)
+
+    def submit_audio(self, model, **params):
+        jid = f"or_sync_{uuid.uuid4().hex[:12]}"
+        try:
+            text = params.get("text") or params.get("input", "")
+            voice = params.get("voice_id") or params.get("voice", "alloy")
+            fmt = params.get("codec") or params.get("response_format", "mp3")
+            speed = float(params.get("speed", 1.0))
+            out_path = openrouter_client.generate_speech(model, text, voice=voice,
+                                                         response_format=fmt, speed=speed)
+            self._sync_results[jid] = {"status": "completed", "output": out_path, "error": None}
+        except Exception as e:
+            self._sync_results[jid] = {"status": "failed", "output": None, "error": str(e)}
+        return jid
+
+    def remove_bg(self, model, image_url, **params):
+        raise ProviderError("OpenRouter does not expose a dedicated remove-background endpoint.")
+
+    def get_status(self, job_id):
+        if job_id in self._sync_results:
+            return self._sync_results[job_id]
+        try:
+            return openrouter_client.video_status(job_id)
+        except openrouter_client.OpenRouterError as e:
+            return {"status": "failed", "output": None, "error": str(e)}
+
+    def upload(self, path):
+        return openrouter_client.to_data_url(path)
+
+    def download(self, url, dest):
+        return openrouter_client.download(url, dest)
+
+
+_REGISTRY = {"atlas_cloud": AtlasCloudProvider, "openrouter": OpenRouterProvider}
 
 
 def get_provider(name=None):

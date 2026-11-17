@@ -4,7 +4,7 @@
 
 **Turn one topic into a finished Vox-style paper-collage explainer / ad video — script, collage keyframes, motion, voice-over, music and captions, all automated.**
 
-An **agent skill** that runs end to end on the [Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_campaign=vox_director) API + local `ffmpeg`, usable by any coding agent (Claude Code, Codex, etc.). You give it a one-line topic; it gives you an `mp4`.
+An **agent skill** that runs end to end on [Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_campaign=vox_director), [OpenRouter](https://openrouter.ai/), or in **Manual / Google Flow** mode (`scripts/manual_pack.py`) + local `ffmpeg`, usable by any coding agent (Claude Code, Codex, etc.). You give it a one-line topic; it gives you an `mp4`.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-black.svg) ![Powered by Atlas Cloud](https://img.shields.io/badge/powered%20by-Atlas%20Cloud-ff5a1f.svg) ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d97757.svg)
 
@@ -96,10 +96,23 @@ git clone https://github.com/Alisa0808/vox-director.git ~/.claude/skills/vox-dir
 
 **Option B — from the packaged skill:** download [`vox-director.skill`](vox-director.skill) and install it via your Claude skills UI.
 
-Then set your Atlas Cloud API key (get one at [atlascloud.ai/console/api-keys](https://www.atlascloud.ai/console/api-keys?utm_source=github&utm_campaign=vox_director)):
-```bash
-export ATLASCLOUD_API_KEY="sk-..."
-```
+Then configure **one** of the supported backends (the skill asks which mode and models you prefer at the start):
+
+- **Option 1 — Atlas Cloud (fully automated):**
+  ```bash
+  export ATLASCLOUD_API_KEY="sk-..."
+  ```
+- **Option 2 — OpenRouter (unified API for images, video & TTS; supply `audio/bgm.mp3` locally):**
+  ```bash
+  export OPENROUTER_API_KEY="sk-or-..."
+  ```
+  Set `"provider": "openrouter"` in `beats.json`.
+- **Option 3 — Manual / Google Flow & Flow Music (no API key needed):**
+  ```bash
+  python3 scripts/manual_pack.py out/<project>          # exports prompts_flow.md + target filenames
+  python3 scripts/manual_pack.py out/<project> --sync   # syncs your generated files into beats.json
+  python3 scripts/assemble.py out/<project>             # builds final.mp4
+  ```
 
 ## Quick start
 
@@ -112,7 +125,7 @@ The agent will draft a beat map for your approval, run a style bake-off for you 
 ## Requirements
 
 - A **coding agent** — Claude Code, Codex, or similar
-- **Atlas Cloud** API key
+- **One backend:** `ATLASCLOUD_API_KEY` (Atlas Cloud), `OPENROUTER_API_KEY` (OpenRouter), or **none** when using Manual / Google Flow mode (`scripts/manual_pack.py`)
 - **ffmpeg** + **ffprobe** (`brew install ffmpeg`)
 - **Python 3** with **Pillow** (`pip install pillow`) — for caption/watermark overlays
 
