@@ -1,6 +1,6 @@
 <p align="right"><b>English</b> · <a href="README.zh.md">简体中文</a></p>
 
-# 🎬 Vox Director
+# 🎬 Motion Collage
 
 **Turn one topic into a finished Vox-style paper-collage explainer / ad video — script, collage keyframes, motion, voice-over, music and captions, all automated.**
 

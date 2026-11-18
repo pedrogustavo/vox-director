@@ -1,5 +1,5 @@
 ---
-name: vox-director
+name: motion-collage
 description: >
   Turn ONE topic into a finished Vox-style paper-collage explainer / ad video, end to end
   on the Atlas Cloud API + local ffmpeg — script, collage keyframes, motion, voice-over,
@@ -16,7 +16,7 @@ description: >
   photo/this product shot into a collage video".
 ---
 
-# Vox Director
+# Motion Collage
 
 Turn a one-line topic into a finished **Vox-style paper-collage video**: a bold, punchy,
 narrated explainer/ad where each beat is a torn-paper collage poster that comes alive, with

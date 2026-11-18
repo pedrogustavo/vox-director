@@ -17,7 +17,7 @@ import sys
 import text_overlay
 
 FPS, TAIL = 24, 0.5
-WATERMARK = "Made with Atlas Cloud · vox-director"
+WATERMARK = "Made with Atlas Cloud · motion-collage"
 RES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)}
 
 

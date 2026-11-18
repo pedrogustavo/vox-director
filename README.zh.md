@@ -1,6 +1,6 @@
 <p align="right"><a href="README.md">English</a> · <b>简体中文</b></p>
 
-# 🎬 Vox Director(拼贴动效导演)
+# 🎬 Motion Collage(拼贴动效导演)
 
 **一个选题进,一条成片出——脚本、拼贴关键帧、动效、旁白、配乐、字幕,全流程自动化的 Vox 风格拼贴讲解/广告视频。**
 

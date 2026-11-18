@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Manual / Google Flow prompt-pack & folder sync for vox-director.
+Manual / Google Flow prompt-pack & folder sync for motion-collage.
 
-Lets you run the full vox-director pipeline WITHOUT an Atlas Cloud API key:
+Lets you run the full motion-collage pipeline WITHOUT an Atlas Cloud API key:
   1. Export: builds all image, video, narration, and music prompts from beats.json
      using the exact same prompt composers as the automated stages, and writes
      <project>/prompts_flow.md + <project>/prompts_flow.json with exact target

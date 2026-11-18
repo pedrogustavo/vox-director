@@ -1,5 +1,5 @@
 ---
-name: vox-director
+name: motion-collage
 description: >
   把一个主题一句话变成成品的 Vox 纸片拼贴讲解/广告视频,全程 Atlas Cloud API + 本地 ffmpeg
   ——脚本、拼贴关键帧、动效、旁白、配乐、字幕全自动。当用户想做「Vox 风格」视频、纸片/撕纸拼贴
@@ -10,7 +10,7 @@ description: >
   「paper collage explainer」「做个拼贴广告」「把这个主题做成拼贴视频」。
 ---
 
-# Vox Director(中文版)
+# Motion Collage(中文版)
 
 把一句话主题变成一条成品 **Vox 纸片拼贴视频**:大胆、有冲击力、带旁白的讲解/广告片,每一段都是
 一张会动的撕纸拼贴海报,配旁白、配乐、字幕。全程只需**一个 Atlas Cloud API key** + 本地 **ffmpeg**。

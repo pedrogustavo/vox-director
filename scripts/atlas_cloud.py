@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Atlas Cloud API client for vox-director.
+Atlas Cloud API client for motion-collage.
 
 Thin, dependency-free wrapper around the Atlas Cloud Media Generation API
 (image / video / upload) plus the OpenAI-compatible LLM endpoint.
@@ -24,7 +24,7 @@ import urllib.error
 
 MEDIA_BASE = "https://api.atlascloud.ai/api/v1"
 LLM_BASE = "https://api.atlascloud.ai/v1"
-UA = "vox-director/0.1 (+https://atlascloud.ai)"
+UA = "motion-collage/0.1 (+https://atlascloud.ai)"
 
 
 class AtlasCloudError(RuntimeError):

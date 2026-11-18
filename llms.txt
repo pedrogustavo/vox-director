@@ -1,4 +1,4 @@
-# Vox Director
+# Motion Collage
 
 > An open-source agent skill that turns ONE topic into a finished Vox-style paper-collage explainer / ad video — script, collage keyframes, motion, voice-over, music and captions — automated end to end on the Atlas Cloud API + local ffmpeg. Works with any coding agent (Claude Code, Codex, and any SKILL.md agent).
 

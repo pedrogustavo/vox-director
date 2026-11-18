@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenRouter API client for vox-director.
+OpenRouter API client for motion-collage.
 
 Dependency-free wrapper around OpenRouter's unified API (https://openrouter.ai/api/v1):
   - Image generation: POST /images (synchronous, returns b64_json)
@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 
 BASE = "https://openrouter.ai/api/v1"
-UA = "vox-director/0.1 (+https://openrouter.ai)"
+UA = "motion-collage/0.1 (+https://openrouter.ai)"
 
 
 class OpenRouterError(RuntimeError):
@@ -40,7 +40,7 @@ def _headers(json_body: bool = True) -> dict:
     h = {
         "Authorization": f"Bearer {_key()}",
         "User-Agent": UA,
-        "X-Title": "vox-director",
+        "X-Title": "motion-collage",
     }
     if json_body:
         h["Content-Type"] = "application/json"

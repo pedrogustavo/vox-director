@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Per-era style bible for vox-director (validated on Atlas Cloud / Nano Banana 2).
+Per-era style bible for motion-collage (validated on Atlas Cloud / Nano Banana 2).
 
 Each STYLE_BASE is scene-agnostic: it fixes ONLY the visual idiom of a dynasty.
 compose_keyframe_prompt() appends the beat's scene + a shared bilingual
