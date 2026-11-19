@@ -2,11 +2,12 @@
 """
 Manual / Google Flow prompt-pack & folder sync for motion-collage.
 
-Lets you run the full motion-collage pipeline WITHOUT an Atlas Cloud API key:
+Let's you run the full motion-collage pipeline WITHOUT an Atlas Cloud API key:
   1. Export: builds all image, video, narration, and music prompts from beats.json
-     using the exact same prompt composers as the automated stages, and writes
-     <project>/prompts_flow.md + <project>/prompts_flow.json with exact target
-     filenames and recommended models for batch generation in Google Flow.
+     using the exact same prompt composers as the automated stages, and writes:
+       - <project>/prompts_flow.md + <project>/prompts_flow.json (images, clips, Flow Music BGM)
+       - <project>/narration.txt (complete narration script for ElevenLabs / Google AI Studio;
+         Flow Music only generates music/soundtracks, not speech)
   2. Sync (--sync): scans <project>/keyframes/, clips/, and audio/ for the
      files you generated, probes audio durations via ffprobe, updates beats.json,
      and reports what is ready vs. still missing before running assemble.py.
@@ -173,6 +174,10 @@ def _build_pack(doc: dict) -> dict:
             })
 
     music_prompt = doc.get("music", "cinematic instrumental, no vocals")
+    full_narration_text = "\n\n".join(
+        nr["text"].strip() for nr in narrations if nr.get("text", "").strip()
+    )
+    voice_cfg = doc.get("voice", {})
     return {
         "project": doc.get("project", "vox-project"),
         "topic": doc.get("topic", ""),
@@ -181,10 +186,20 @@ def _build_pack(doc: dict) -> dict:
         "keyframes": keyframes,
         "clips": clips,
         "narrations": narrations,
+        "full_narration": {
+            "text_file": "narration.txt",
+            "audio_file": "audio/narration.mp3",
+            "accepted_exts": list(AUDIO_EXTS),
+            "language": voice_cfg.get("language", doc.get("language", "en")),
+            "voice_id": voice_cfg.get("voice_id", "leo"),
+            "speed": voice_cfg.get("speed", 1.0),
+            "tools": "ElevenLabs or Google AI Studio (Flow Music generates music only, not speech)",
+            "text": full_narration_text,
+        },
         "bgm": {
             "file": "audio/bgm.mp3",
             "accepted_exts": list(AUDIO_EXTS),
-            "model": "minimax/music-2.6 (or Flow Music)",
+            "model": "Google Flow Music (soundtrack/instrumental only — no narration)",
             "prompt": music_prompt,
         },
     }
@@ -254,30 +269,27 @@ def _render_markdown(pack: dict, project_dir: str) -> str:
             "",
         ]
 
+    bgm = pack["bgm"]
+    fn = pack["full_narration"]
     lines += [
         "---",
         "",
-        f"## Batch 3 — Audio (Flow Music / TTS)",
+        "## Batch 3 — Audio (Flow Music for Soundtrack + External TTS for Narration)",
         "",
-        "### Narration (one file per beat)",
-        "",
-    ]
-    for nr in pack["narrations"]:
-        lines += [
-            f"#### Beat {nr['beat_id']} → `{nr['file']}`",
-            f"- **Language / Voice / Speed:** `{nr['language']}` · `{nr['voice_id']}` · `{nr['speed']}x`",
-            "```text",
-            nr["text"],
-            "```",
-            "",
-        ]
-
-    bgm = pack["bgm"]
-    lines += [
-        f"### Background Music → `{bgm['file']}`",
-        f"- **Model:** {bgm['model']}",
+        f"### 1. Background Music (Soundtrack) → `{bgm['file']}`",
+        f"- **Tool / Model:** {bgm['model']}",
+        "- *Note: Google Flow Music only generates music/soundtracks, not voice-over narration.*",
         "```text",
         bgm["prompt"],
+        "```",
+        "",
+        f"### 2. Full Narration (Voice-Over) → `{fn['audio_file']}`",
+        f"- **Script file:** `{fn['text_file']}` (ready to copy-paste)",
+        f"- **Recommended tools:** {fn['tools']}",
+        f"- **Language / Voice / Speed:** `{fn['language']}` · `{fn['voice_id']}` · `{fn['speed']}x`",
+        "- *Save the exported audio as `audio/narration.mp3` (or `.wav`/`.m4a`). Per-beat files (`audio/narr_1.mp3`, ...) are also supported by `--sync`.*",
+        "```text",
+        fn["text"],
         "```",
         "",
     ]
@@ -293,17 +305,21 @@ def export_pack(project_dir: str) -> None:
 
     md_path = os.path.join(project_dir, "prompts_flow.md")
     json_path = os.path.join(project_dir, "prompts_flow.json")
+    narr_txt_path = os.path.join(project_dir, "narration.txt")
     with open(md_path, "w") as f:
         f.write(_render_markdown(pack, project_dir))
     with open(json_path, "w") as f:
         json.dump(pack, f, ensure_ascii=False, indent=2)
+    with open(narr_txt_path, "w") as f:
+        f.write(pack["full_narration"]["text"] + "\n")
 
     print(f"Exported prompt pack:")
-    print(f"  Markdown: {md_path}")
-    print(f"  JSON:     {json_path}")
+    print(f"  Markdown:  {md_path}")
+    print(f"  JSON:      {json_path}")
+    print(f"  Narration: {narr_txt_path}")
     print(
-        f"  Totals:   {len(pack['keyframes'])} keyframes, "
-        f"{len(pack['clips'])} clips, {len(pack['narrations'])} narrations + 1 bgm"
+        f"  Totals:    {len(pack['keyframes'])} keyframes, "
+        f"{len(pack['clips'])} clips, 1 full narration ({len(pack['narrations'])} beats) + 1 bgm"
     )
 
 
@@ -343,6 +359,25 @@ def sync_files(project_dir: str) -> None:
             else:
                 missing_clips.append(f"clips/clip_{key}.mp4")
 
+    full_narr = _find_by_stem(audio_dir, "narration", AUDIO_EXTS)
+    total_beats = len(doc.get("beats", []))
+    use_full_narr = False
+
+    if found_narr == total_beats and total_beats > 0:
+        doc.pop("narration_audio", None)
+        doc.pop("narration_dur", None)
+        narr_status = f"{found_narr}/{total_beats} per-beat files found"
+    elif full_narr:
+        use_full_narr = True
+        full_dur = _probe_dur(full_narr)
+        doc["narration_audio"] = full_narr
+        doc["narration_dur"] = full_dur
+        missing_narr = []
+        narr_status = f"OK ({os.path.basename(full_narr)}, {full_dur}s — full track)"
+    else:
+        missing_narr = ["audio/narration.mp3 (or per-beat audio/narr_<id>.mp3)"]
+        narr_status = f"MISSING (expected audio/narration.mp3 or {total_beats} per-beat files)"
+
     bgm = _find_by_stem(audio_dir, "bgm", AUDIO_EXTS)
     if bgm:
         doc["bgm_path"] = bgm
@@ -354,10 +389,10 @@ def sync_files(project_dir: str) -> None:
     print(f"Synced {bpath}:")
     print(f"  Keyframes:  {found_kf} found, {len(missing_kf)} missing")
     print(f"  Clips:      {found_clips} found, {len(missing_clips)} missing")
-    print(f"  Narrations: {found_narr} found, {len(missing_narr)} missing")
+    print(f"  Narration:  {narr_status}")
     print(f"  BGM:        {'OK (' + os.path.basename(bgm) + ')' if bgm else 'MISSING (audio/bgm.mp3)'}")
 
-    missing = missing_kf + missing_clips + missing_narr + ([] if bgm else ["audio/bgm.mp3"])
+    missing = missing_kf + missing_clips + ([] if use_full_narr else missing_narr) + ([] if bgm else ["audio/bgm.mp3"])
     if missing:
         print("\nStill missing:")
         for item in missing:

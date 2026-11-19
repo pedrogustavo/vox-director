@@ -56,6 +56,9 @@ def run(project_dir):
     os.makedirs(tmp, exist_ok=True)
 
     # ---- flatten shots into timed segments; track each beat's span ----
+    use_full_narr = bool(doc.get("narration_audio")) and not all(
+        b.get("narration_audio") for b in beats
+    )
     segs = []          # {clip, dur}
     beat_spans = []    # {start, dur, beat}
     t = 0.0
@@ -64,15 +67,23 @@ def run(project_dir):
         shot_list = list(shots_of(beat))
         # ensure the beat covers its narration (extend last shot if needed)
         durs = [float(s.get("dur", 10)) for s in shot_list]
-        need = float(beat.get("narration_dur", sum(durs))) + TAIL
-        # a host shot's audio IS its clip, so it is never extended or slowed (sync would break)
-        if sum(durs) < need and shot_list[-1].get("kind") != "host":
-            durs[-1] += need - sum(durs)
+        if not use_full_narr:
+            need = float(beat.get("narration_dur", sum(durs))) + TAIL
+            # a host shot's audio IS its clip, so it is never extended or slowed (sync would break)
+            if sum(durs) < need and shot_list[-1].get("kind") != "host":
+                durs[-1] += need - sum(durs)
         for s, d in zip(shot_list, durs):
             segs.append({"clip": s["clip_path"], "dur": round(d, 2),
                          "host": s.get("kind") == "host"})
             t += d
         beat_spans.append({"start": beat_start, "dur": round(t - beat_start, 2), "beat": beat})
+    if use_full_narr and segs and not segs[-1]["host"]:
+        full_need = float(doc.get("narration_dur") or probe_dur(doc["narration_audio"])) + TAIL
+        if t < full_need:
+            extra = round(full_need - t, 2)
+            segs[-1]["dur"] = round(segs[-1]["dur"] + extra, 2)
+            beat_spans[-1]["dur"] = round(beat_spans[-1]["dur"] + extra, 2)
+            t = round(t + extra, 2)
     total = round(t, 2)
 
     # ---- 1) normalise each shot to a silent segment of exactly its dur ----
@@ -128,9 +139,13 @@ def run(project_dir):
         inputs += ["-i", p]                     # 1..ncap
     inputs += ["-i", wm_png]                    # ncap+1
     narr_base = ncap + 2
-    for bs in beat_spans:
-        inputs += ["-i", bs["beat"]["narration_audio"]]   # narr inputs
-    bgm_idx = narr_base + nb
+    if use_full_narr:
+        inputs += ["-i", doc["narration_audio"]]
+        bgm_idx = narr_base + 1
+    else:
+        for bs in beat_spans:
+            inputs += ["-i", bs["beat"]["narration_audio"]]   # narr inputs
+        bgm_idx = narr_base + nb
     inputs += ["-i", doc["bgm_path"]]
 
     chain, prev = [], "[0:v]"
@@ -141,15 +156,18 @@ def run(project_dir):
         prev = lbl
     chain.append(f"{prev}[{ncap+1}:v]overlay=0:0[v]")
 
-    # per-beat narration delayed to its start, then mixed
-    nlabels = []
-    for i, bs in enumerate(beat_spans):
-        ms = int(bs["start"] * 1000)
-        chain.append(f"[{narr_base+i}:a]adelay={ms}:all=1[n{i}]")
-        nlabels.append(f"[n{i}]")
-    # pad the narration mix to the FULL duration, else sidechaincompress follows the (shorter)
-    # narration length and -shortest clips the tail (e.g. a silent payoff/ending beat).
-    chain.append(f"{''.join(nlabels)}amix=inputs={nb}:normalize=0:duration=longest,volume={voice_vol},apad,atrim=0:{total}[narrmix]")
+    if use_full_narr:
+        chain.append(f"[{narr_base}:a]volume={voice_vol},apad,atrim=0:{total}[narrmix]")
+    else:
+        # per-beat narration delayed to its start, then mixed
+        nlabels = []
+        for i, bs in enumerate(beat_spans):
+            ms = int(bs["start"] * 1000)
+            chain.append(f"[{narr_base+i}:a]adelay={ms}:all=1[n{i}]")
+            nlabels.append(f"[n{i}]")
+        # pad the narration mix to the FULL duration, else sidechaincompress follows the (shorter)
+        # narration length and -shortest clips the tail (e.g. a silent payoff/ending beat).
+        chain.append(f"{''.join(nlabels)}amix=inputs={nb}:normalize=0:duration=longest,volume={voice_vol},apad,atrim=0:{total}[narrmix]")
     # a filter-output label can only be consumed once -> split narration in two
     chain.append("[narrmix]asplit=2[narrA][narrB]")
     chain.append(f"[{bgm_idx}:a]atrim=0:{total},volume={music_vol},afade=t=out:st={max(total-2,0):.2f}:d=2[bgt]")

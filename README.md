@@ -109,7 +109,7 @@ Then configure **one** of the supported backends (the skill asks which mode and 
   Set `"provider": "openrouter"` in `beats.json`.
 - **Option 3 — Manual / Google Flow & Flow Music (no API key needed):**
   ```bash
-  python3 scripts/manual_pack.py out/<project>          # exports prompts_flow.md + target filenames
+  python3 scripts/manual_pack.py out/<project>          # exports prompts_flow.md + narration.txt (ElevenLabs/AI Studio)
   python3 scripts/manual_pack.py out/<project> --sync   # syncs your generated files into beats.json
   python3 scripts/assemble.py out/<project>             # builds final.mp4
   ```

@@ -48,7 +48,7 @@ Before checking API keys or generating anything, **ask the user**:
 1. **Execution mode:**
    - **Auto (Atlas Cloud API)** — fully automated end-to-end (`"provider": "atlas_cloud"`, requires `ATLASCLOUD_API_KEY`).
    - **Auto (OpenRouter API)** — unified OpenAI-compatible API via `https://openrouter.ai/api/v1` (`"provider": "openrouter"`, requires `OPENROUTER_API_KEY`; note: OpenRouter handles images, videos, and TTS, while BGM `audio/bgm.mp3` must be supplied locally e.g. from Flow Music).
-   - **Manual / Google Flow** — exports batch prompts + exact target filenames (`scripts/manual_pack.py`) for Google Flow / Flow Music, then syncs local files and assembles with `ffmpeg` (no API key needed).
+   - **Manual / Google Flow** — exports batch prompts + exact target filenames (`scripts/manual_pack.py`) for Google Flow (images/video), Flow Music (soundtrack/BGM only — it does not generate speech), and `narration.txt` (complete narration script to generate separately in ElevenLabs or Google AI Studio), then syncs local files and assembles with `ffmpeg` (no API key needed).
 2. **Preferred models** (record the choices in `beats.json` as `image_model` and `video_model`):
    - **Image model:** e.g. `google/nano-banana-2/text-to-image` (Atlas default) / `google/gemini-2.5-flash-image` (OpenRouter) / `openai/gpt-image-2/text-to-image`, or another model of the user's choice.
    - **Video model:** e.g. `google/gemini-omni-flash/image-to-video` (Atlas default) / `google/veo-3.1` (OpenRouter) / `kwaivgi/kling-video-o3-pro/image-to-video` (Kling O3 Pro — required for real people/brands), or another model of the user's choice.
@@ -341,9 +341,10 @@ frame reconstructs the original poster.
 - **Auto edition** (this skill): topic in, film out, all on Atlas.
 - **Manual prompt-pack / Google Flow edition** (no `ATLASCLOUD_API_KEY` needed):
   1. Write `out/<project>/beats.json` as usual (same beat map + theme approval gate).
-  2. Export all image, video, narration, and music prompts with exact expected filenames:
+  2. Export all image, video, and soundtrack prompts plus the complete narration script:
      `python3 scripts/manual_pack.py out/<project>`
-     This writes `prompts_flow.md` and `prompts_flow.json` (and creates `keyframes/`, `clips/`, `audio/`).
-     Present the prompts, recommended models, and target filenames to the user for batch generation in Google Flow / Flow Music.
+     This writes `prompts_flow.md`, `prompts_flow.json`, and `narration.txt` (and creates `keyframes/`, `clips/`, `audio/`).
+     - Present the image, video, and **soundtrack (Flow Music)** prompts with target filenames (`audio/bgm.mp3`).
+     - Note that **Flow Music only generates music/soundtracks, not narration**: instruct the user to use `narration.txt` to generate the complete voice-over separately in **ElevenLabs** or **Google AI Studio** and save it as `audio/narration.mp3` (per-beat `audio/narr_<id>.mp3` files are also supported).
   3. Once the user drops the generated files into `keyframes/`, `clips/`, and `audio/`, sync them into `beats.json` and assemble:
      `python3 scripts/manual_pack.py out/<project> --sync && python3 scripts/assemble.py out/<project>`
